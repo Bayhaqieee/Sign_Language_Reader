@@ -70,14 +70,21 @@ class ImageCaptureApp:
         for label in self.labels:
             self.current_label = label
             self.count = 0
-            self.label_var.set(f"Get ready to capture images for label: {label}. Press 'Space' to start.")
+            
+            self.label_var.set(f"Get ready to capture images for label: {label}. Press 'Space' to start capturing.")
             self.root.update()
+
+            # Wait for user to press space to start capturing
+            while not self.paused:
+                self.root.wait_variable(self.label_var)  # Wait for an event
+                if self.paused:
+                    break
             
             if not os.path.exists(os.path.join(self.save_dir, label)):
                 os.makedirs(os.path.join(self.save_dir, label))
 
             self.cap = cv2.VideoCapture(0)
-            self.paused = True  # Start paused until spacebar is pressed
+            self.paused = False  # Start capturing images
 
             while self.count < self.num_images_per_label:
                 ret, frame = self.cap.read()
