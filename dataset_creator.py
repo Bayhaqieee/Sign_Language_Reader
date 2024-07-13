@@ -7,11 +7,20 @@ from PIL import Image, ImageTk
 class ImageCaptureApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Image Capture for Sign Language and Numbers")
+        self.root.title("Sign Language Image Capture")
         self.root.geometry("800x600")
 
         self.label_var = tk.StringVar()
         self.label_var.set("Press 'Start' to begin capturing images.")
+
+        self.language_var = tk.StringVar(value="SIBI")
+        self.language_var.trace_add('write', self.update_labels)
+
+        self.language_label = tk.Label(self.root, text="Select Language:")
+        self.language_label.pack(pady=10)
+
+        self.language_dropdown = tk.OptionMenu(self.root, self.language_var, "SIBI", "BISINDO")
+        self.language_dropdown.pack(pady=5)
 
         self.start_button = tk.Button(self.root, text="Start", command=self.start_capture)
         self.start_button.pack(pady=20)
@@ -35,8 +44,16 @@ class ImageCaptureApp:
         self.count = 0
         self.current_label = None
         self.num_images_per_label = 100
-        self.labels = [str(i) for i in range(10)] + [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+        self.labels = {
+            "SIBI": [str(i) for i in range(10)] + [chr(i) for i in range(ord('A'), ord('Z') + 1)],
+            "BISINDO": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
+        }
         self.save_dir = 'dataset'
+        self.update_labels()
+
+    def update_labels(self, *args):
+        current_language = self.language_var.get()
+        self.labels_to_capture = self.labels[current_language]
 
     def start_capture(self):
         self.start_button.config(state=tk.DISABLED)
@@ -67,7 +84,8 @@ class ImageCaptureApp:
         self.root.destroy()
 
     def capture_images(self):
-        for label in self.labels:
+        current_language = self.language_var.get()
+        for label in self.labels_to_capture:
             self.current_label = label
             self.count = 0
             
@@ -80,8 +98,9 @@ class ImageCaptureApp:
                 if self.paused:
                     break
             
-            if not os.path.exists(os.path.join(self.save_dir, label)):
-                os.makedirs(os.path.join(self.save_dir, label))
+            save_path = os.path.join(self.save_dir, current_language)
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
 
             self.cap = cv2.VideoCapture(0)
             self.paused = False  # Start capturing images
@@ -98,7 +117,7 @@ class ImageCaptureApp:
                 self.image_label.configure(image=imgtk)
 
                 if not self.paused:
-                    image_path = os.path.join(self.save_dir, label, f'{label}_{self.count}.jpg')
+                    image_path = os.path.join(save_path, f'{label}_{self.count}.jpg')
                     cv2.imwrite(image_path, frame)
                     self.count += 1
                     self.label_var.set(f'Captured {self.count}/{self.num_images_per_label} for label: {label}')
